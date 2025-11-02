@@ -4,7 +4,8 @@ version: '3'
 vars:
   INGRESS_NGINX_NS: "ingress-nginx"
   INGRESS_NGINX_VERSION: 4.13.3
-  CLUSTER_NAME: "slke-1"
+  APP_NAMESPACE: default
+  CLUSTER_NAME: slke-1
   CLUSTER_CONTEXT: kind-{{.CLUSTER_NAME}}
   DEPENDENCIES:
     - docker
@@ -12,65 +13,127 @@ vars:
     - helm
     - cloud-provider-kind
     - kubectl
-    - kubectx
+
+check-docker-running: &check-docker-running |
+  docker info > /dev/null 2>&1
+
+check-cluster-running: &check-cluster-running |
+  kind get clusters | grep {{.CLUSTER_NAME}}
+
+check-cloud-provider-kind-running: &check-cloud-provider-kind-running |
+  pgrep sudo cloud-provider-kind
 
 tasks:
+  default:
+    aliases: [all, make]
+    deps:
+      - check-dependencies
+      - create-cluster
+      - run-cloud-provider-kind
+      - deploy-ingress
+      - deploy-app
+
   check-dependencies:
+    silent: true
     cmds:
-    - |
-      {{range .DEPENDENCIES}}
-        if ! command -v {{.}} > /dev/null; then
-          echo "{{.}} not found"
-        else
-          # echo "{{.}} found"
+      - |
+        {{range .DEPENDENCIES}}
+          if ! command -v {{.}} > /dev/null; then
+            echo "{{.}} not found"
+          fi
+        {{end}}
+        if ! helm plugin list | grep -q diff > /dev/null; then
+            echo "helm diff plugin is missing"
         fi
-      {{end}}
-    silent: true
-
-  check-docker:
-    cmds:
-      - docker info > /dev/null 2>&1
-    silent: true
-
-  check-cluster-running:
-    cmds:
-      - kind get clusters | grep {{.CLUSTER_NAME}}
 
   create-cluster:
-    deps:
-      - check-docker
+    run: once
+    preconditions:
+      - *check-docker-running
     cmds:
       - kind create cluster --config=./kind-config.yaml
     status:
-      - task: check-cluster-running
+      - *check-cluster-running
 
   run-cloud-provider-kind:
     run: once
     deps:
-      - task: create-cluster
+      - create-cluster
+    interactive: true
     cmds:
+      - sudo -v
       - bash -c 'nohup sudo cloud-provider-kind >/dev/null 2>&1 &'
     status:
-      - pgrep sudo cloud-provider-kind
+      - *check-cloud-provider-kind-running
 
-  ingress:
-    preconditions:
-      - task: run-cloud-provider-kind
-    cmds:
-      - echo "hi"
-
-  all:
+  deploy-ingress:
+    run: once
     deps:
-      - build
-      - test
-      - lint
+      - create-cluster
+      - run-cloud-provider-kind
+    cmds:
+      - |
+        helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+        helm repo update
+        helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+          --create-namespace \
+          -n {{.INGRESS_NGINX_NS}} \
+          --values ingress-nginx.values.yaml \
+          --version {{.INGRESS_NGINX_VERSION}} \
+          --wait
+    status:
+      - |
+        helm diff upgrade ingress-nginx ingress-nginx/ingress-nginx \
+          -n {{.INGRESS_NGINX_NS}} \
+          --values ingress-nginx.values.yaml \
+          --version {{.INGRESS_NGINX_VERSION}} \
 
+  clean-ingress:
+    cmds:
+      - helm uninstall ingress-nginx -n {{.INGRESS_NGINX_NS}}
 
+  get-lb-ip:
+    silent: true
+    deps:
+      - deploy-ingress
+    cmds:
+      - echo $(kubectl get svc/ingress-nginx-controller -n {{.INGRESS_NGINX_NS}} -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')  # yamllint disable-line rule:line-length
+      - echo "place this in /ect/hosts"
+      - echo "example:"
+      - echo
+      - echo "<IP>      kind.local"
+
+  deploy-app:
+    run: once
+    deps:
+      - create-cluster
+      - run-cloud-provider-kind
+      - deploy-ingress
+    cmds:
+      - kubectl apply -f app.yaml
+    status:
+      - kubectl diff -f app.yaml
+
+  clean-app:
+    cmds:
+      - kubectl delete -f app.yaml
+
+  clean-cloud-provider-kind:
+    interactive: true
+    cmds:
+      - *check-cloud-provider-kind-running
+      - sudo -v
+      - sudo pkill cloud-provider-kind
+
+  clean-cluster:
+    cmds:
+      - kind delete cluster --name {{.CLUSTER_NAME}}
 
   clean:
-    preconditions:
-      - task: create-cluster
-      - task: run-cloud-provider-kind
+    aliases: [delete]
+    ignore_error: true
     cmds:
-      - sudo pkill cloud-provider-kind
-      - kind delete cluster --name slke-1
+      - task: clean-app
+      - task: clean-ingress
+      - task: clean-cluster
+      - task: clean-cloud-provider-kind

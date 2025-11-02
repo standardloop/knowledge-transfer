@@ -1,6 +1,4 @@
+---
 controller:
   service:
     type: "LoadBalancer"
-  # extraArgs:
-  #   # publish-status-address: "localhost"
-  #   # enable-ssl-passthrough: "true"

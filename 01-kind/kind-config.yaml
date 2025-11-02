@@ -7,9 +7,3 @@ nodes:
     image: kindest/node:v1.34.0
   - role: worker
     image: kindest/node:v1.34.0
-    # kubeadmConfigPatches:
-    #   - |
-    #     kind: JoinConfiguration
-    #     nodeRegistration:
-    #       kubeletExtraArgs:
-    #         node-labels: "ingress-ready=true"

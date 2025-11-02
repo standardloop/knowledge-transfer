@@ -103,7 +103,7 @@ nodes:
   - role: worker
     image: kindest/node:v1.34.0
 ```
-Here we are creating two nodes, one for the control 
+Here we are creating two nodes, one for the control
 
 
 ```sh
@@ -246,7 +246,7 @@ $ kubectl get svc/ingress-nginx-controller -n ingress-nginx -o=jsonpath='{.statu
 ##### Use `curl` to hit the `LoadBalancer`
 
 ```sh
-$ curl http://172.18.0.4 
+$ curl http://172.18.0.4
 <html>
 <head><title>404 Not Found</title></head>
 <body>
