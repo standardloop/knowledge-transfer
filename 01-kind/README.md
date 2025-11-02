@@ -31,7 +31,7 @@ Have `docker` installed and have a docker engine running.
 
 For this article, I will be using [Rancher Desktop](https://github.com/rancher-sandbox/rancher-desktop/).
 
-You can install with Rancher Desktop with `brews` like this:
+You can install with Rancher Desktop with `brew` like this:
 
 ```sh
 $ brew install --cask rancher
@@ -69,7 +69,7 @@ kind version 0.30.0
 
 ### Background
 
-I will naming must cluster `slke-1` (standardloop kubernetes engine 1).
+I will naming my cluster `slke-1` (standardloop kubernetes engine 1).
 
 You can create clusters without config files, but I always recommend getting in the habit of using them for repeatable behavior.
 

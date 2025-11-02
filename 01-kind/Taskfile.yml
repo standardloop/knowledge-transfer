@@ -4,9 +4,7 @@ version: '3'
 vars:
   INGRESS_NGINX_NS: "ingress-nginx"
   INGRESS_NGINX_VERSION: 4.13.3
-  APP_NAMESPACE: default
   CLUSTER_NAME: slke-1
-  CLUSTER_CONTEXT: kind-{{.CLUSTER_NAME}}
   DEPENDENCIES:
     - docker
     - kind
