@@ -19,16 +19,17 @@ and the documentation here:
 
 ### General Knowledge
 - `docker`
-- `brew` (or your preffered package manager)
+- `brew` (or your preferred package manager)
 - YAML
 - `helm`
+- `kubectl`
 
 ### Install and Setup
 
 #### Docker
 Have `docker` installed and have a docker engine running.
 
-For this article, I will be using [Rancher Desktop](https://github.com/rancher-sandbox/rancher-desktop/)
+For this article, I will be using [Rancher Desktop](https://github.com/rancher-sandbox/rancher-desktop/).
 
 You can install with Rancher Desktop with `brews` like this:
 
@@ -52,7 +53,7 @@ $ echo $?
 
 #### `kind`
 
-I recommend install using a package manager such as `brew` for macOS
+I recommend installing using a package manager such as `brew` for macOS:
 
 ```sh
 $ brew install kind
@@ -70,7 +71,7 @@ kind version 0.30.0
 
 I will naming must cluster `slke-1` (standardloop kubernetes engine 1).
 
-You can create clusters without config files, but I always recomended getting in the habit of using them for repeatable behavior.
+You can create clusters without config files, but I always recommend getting in the habit of using them for repeatable behavior.
 
 ---
 
@@ -103,7 +104,7 @@ nodes:
   - role: worker
     image: kindest/node:v1.34.0
 ```
-Here we are creating two nodes, one for the control
+Here we are creating two nodes, one for the control-plane and one worker.
 
 
 ```sh
@@ -157,7 +158,7 @@ You cannot update a cluster after creation, so you will need to delete it and th
 
 `cloud-provider-kind` allows you to use a Kubernetes `Service` type [LoadBalancer](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer).
 
-The reason it is called `cloud-provider-kind` is because when you use a Kubernetes `Service` type `LoadBalancer` in a cloud environment, such as [Google Kubernetes Engine](https://docs.cloud.google.com/kubernetes-engine/docs/concepts/service-load-balancer), the Cloud Provider with setup some infrastructure behind the scenes to allow routing.
+The reason it is called `cloud-provider-kind` is because when you use a Kubernetes `Service` type `LoadBalancer` in a cloud environment, such as [Google Kubernetes Engine](https://docs.cloud.google.com/kubernetes-engine/docs/concepts/service-load-balancer), the Cloud Provider will setup some infrastructure behind the scenes to allow routing.
 
 Previously, you had to configure [MetalLB](https://github.com/metallb/metallb) (which was a more involved setup and had issues on macOS), or use [Extra Port Mappings](https://kind.sigs.k8s.io/docs/user/configuration/#extra-port-mappings) (which was a simple solution, but it felt more hacky and different from what would be used in a production environment).
 
@@ -172,7 +173,7 @@ $ which cloud-provider-kind
 
 #### Run
 
-I recomend opening a seperate terminal session for running this command.
+I recommend opening a separate terminal session for running this command to easily view the logs.
 
 According to the [README of the repository](https://github.com/kubernetes-sigs/cloud-provider-kind/blob/main/README.md), you will need to run with `sudo`
 ```sh
@@ -180,6 +181,16 @@ $ sudo cloud-provider-kind
 ```
 
 You watch is log information when a Kubernetes `Service` type `LoadBalancer` is created or deleted.
+
+
+You can also view the docker container running:
+
+```sh
+$ docker ps
+CONTAINER ID   IMAGE                      COMMAND                  CREATED          STATUS          PORTS                                                                                                                                     NAMES
+a411bd911a94   envoyproxy/envoy:v1.33.2   "/docker-entrypoint.…"   4 seconds ago    Up 3 seconds    0.0.0.0:32774->80/tcp, [::]:32774->80/tcp, 0.0.0.0:32775->443/tcp, [::]:32775->443/tcp, 0.0.0.0:32776->10000/tcp, [::]:32776->10000/tcp   kindccm-f53170ec34f3
+...
+```
 
 
 ### Deploying `ingress-nginx` as our `LoadBalancer`
@@ -307,11 +318,11 @@ spec:
         app: http-echo
     spec:
       containers:
-      - name: http-echo
-        image: hashicorp/http-echo:1.0.0
-        args: ["-text", "Hello from Kubernetes!", "-listen", ":8080"]
-        ports:
-        - containerPort: 8080
+        - name: http-echo
+          image: hashicorp/http-echo:1.0.0
+          args: ["-text", "Hello from Kubernetes!", "-listen", ":8080"]
+          ports:
+            - containerPort: 8080
 ---
 apiVersion: v1
 kind: Service
@@ -360,25 +371,19 @@ Go to http://kind.local and see the message!
 
 ### Cleaning up
 
-stop your `cloud-provider-kind`
-delete your cluster
+stop your `cloud-provider-kind` by Ctrl+C'ing the terminal or by looking the processes and stopping it.
+
+And then delete your cluster:
 ```sh
 $ kind delete cluster --name slke-1
 ```
 
-
 ## TLDR
 
+Use my provided `Taskfile.yml` and run it all yourself easily!
+
+- https://github.com/standardloop/knowledge-transfer/blob/main/01-kind/Taskfile.yml
+
 ```sh
-$ kind create cluster --config=./kind-config.yaml
-
-$ sudo cloud-provider-kind
-
-$ helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-    --create-namespace \
-    -n ingress-nginx \
-    --values ingress-nginx.values.yaml \
-    --version 4.13.3 \
-    --wait
-$ kubectl apply -f app.yaml
+$ task
 ```

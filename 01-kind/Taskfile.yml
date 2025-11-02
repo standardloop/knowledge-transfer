@@ -32,6 +32,7 @@ tasks:
       - run-cloud-provider-kind
       - deploy-ingress
       - deploy-app
+      - open-app
 
   check-dependencies:
     silent: true
@@ -69,7 +70,6 @@ tasks:
   deploy-ingress:
     run: once
     deps:
-      - create-cluster
       - run-cloud-provider-kind
     cmds:
       - |
@@ -92,22 +92,9 @@ tasks:
     cmds:
       - helm uninstall ingress-nginx -n {{.INGRESS_NGINX_NS}}
 
-  get-lb-ip:
-    silent: true
-    deps:
-      - deploy-ingress
-    cmds:
-      - echo $(kubectl get svc/ingress-nginx-controller -n {{.INGRESS_NGINX_NS}} -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')  # yamllint disable-line rule:line-length
-      - echo "place this in /ect/hosts"
-      - echo "example:"
-      - echo
-      - echo "<IP>      kind.local"
-
   deploy-app:
     run: once
     deps:
-      - create-cluster
-      - run-cloud-provider-kind
       - deploy-ingress
     cmds:
       - kubectl apply -f app.yaml
@@ -117,6 +104,27 @@ tasks:
   clean-app:
     cmds:
       - kubectl delete -f app.yaml
+
+  update-etc-hosts:
+    run: once
+    prompt: Do you want to update /etc/hosts ?
+    deps:
+      - deploy-app
+    cmds:
+      - echo {{.LOAD_BALANCER_IP}}
+      - sudo -v
+      - echo "{{.LOAD_BALANCER_IP}}      kind.local" | sudo tee -a /etc/hosts
+    status:
+      - cat /etc/hosts | grep {{.LOAD_BALANCER_IP}}
+    vars:
+      LOAD_BALANCER_IP:
+        sh: kubectl get svc/ingress-nginx-controller -n {{.INGRESS_NGINX_NS}} -o=jsonpath='{.status.loadBalancer.ingress[0].ip}'  # yamllint disable-line rule:line-length
+
+  open-app:
+    deps:
+      - deploy-app
+    cmds:
+      - open http://kind.local
 
   clean-cloud-provider-kind:
     interactive: true
@@ -137,3 +145,4 @@ tasks:
       - task: clean-ingress
       - task: clean-cluster
       - task: clean-cloud-provider-kind
+      - echo "make sure to reset your etc/hosts!"
