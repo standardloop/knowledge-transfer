@@ -1,3 +1,3 @@
 # knowledge-transfer
 
-Large repo full of documentation and proof of concepts.
+Repo full of documentation, and code from [Medium articles](https://medium.com/@standardloop).
