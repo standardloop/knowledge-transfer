@@ -1,0 +1,76 @@
+---
+version: '3'
+
+vars:
+  INGRESS_NGINX_NS: "ingress-nginx"
+  INGRESS_NGINX_VERSION: 4.13.3
+  CLUSTER_NAME: "slke-1"
+  CLUSTER_CONTEXT: kind-{{.CLUSTER_NAME}}
+  DEPENDENCIES:
+    - docker
+    - kind
+    - helm
+    - cloud-provider-kind
+    - kubectl
+    - kubectx
+
+tasks:
+  check-dependencies:
+    cmds:
+    - |
+      {{range .DEPENDENCIES}}
+        if ! command -v {{.}} > /dev/null; then
+          echo "{{.}} not found"
+        else
+          # echo "{{.}} found"
+        fi
+      {{end}}
+    silent: true
+
+  check-docker:
+    cmds:
+      - docker info > /dev/null 2>&1
+    silent: true
+
+  check-cluster-running:
+    cmds:
+      - kind get clusters | grep {{.CLUSTER_NAME}}
+
+  create-cluster:
+    deps:
+      - check-docker
+    cmds:
+      - kind create cluster --config=./kind-config.yaml
+    status:
+      - task: check-cluster-running
+
+  run-cloud-provider-kind:
+    run: once
+    deps:
+      - task: create-cluster
+    cmds:
+      - bash -c 'nohup sudo cloud-provider-kind >/dev/null 2>&1 &'
+    status:
+      - pgrep sudo cloud-provider-kind
+
+  ingress:
+    preconditions:
+      - task: run-cloud-provider-kind
+    cmds:
+      - echo "hi"
+
+  all:
+    deps:
+      - build
+      - test
+      - lint
+
+
+
+  clean:
+    preconditions:
+      - task: create-cluster
+      - task: run-cloud-provider-kind
+    cmds:
+      - sudo pkill cloud-provider-kind
+      - kind delete cluster --name slke-1
