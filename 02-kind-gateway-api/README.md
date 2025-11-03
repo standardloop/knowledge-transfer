@@ -197,7 +197,7 @@ cloud-provider-kind   kind.sigs.k8s.io/gateway-controller   True       5m1s
 ```
 
 
-### Deploying the Gateway Resourcce
+### Deploying the Gateway Resource
 
 I will create a file called `gateway.yaml` with the following contents:
 

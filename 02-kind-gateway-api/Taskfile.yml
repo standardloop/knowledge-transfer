@@ -28,6 +28,7 @@ tasks:
       - run-cloud-provider-kind
       - deploy-gateway
       - deploy-app
+      - update-etc-hosts
       - open-app
 
   check-dependencies:
