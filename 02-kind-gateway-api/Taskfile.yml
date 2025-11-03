@@ -1,0 +1,130 @@
+---
+version: '3'
+
+vars:
+  CLUSTER_NAME: slke-1
+  GATEWAY_NS: gateway
+  DEPENDENCIES:
+    - docker
+    - kind
+    - cloud-provider-kind
+    - kubectl
+
+check-docker-running: &check-docker-running |
+  docker info > /dev/null 2>&1
+
+check-cluster-running: &check-cluster-running |
+  kind get clusters | grep {{.CLUSTER_NAME}}
+
+check-cloud-provider-kind-running: &check-cloud-provider-kind-running |
+  pgrep sudo cloud-provider-kind
+
+tasks:
+  default:
+    aliases: [all, make]
+    deps:
+      - check-dependencies
+      - create-cluster
+      - run-cloud-provider-kind
+      - deploy-gateway
+      - deploy-app
+      - open-app
+
+  check-dependencies:
+    silent: true
+    cmds:
+      - |
+        {{range .DEPENDENCIES}}
+          if ! command -v {{.}} > /dev/null; then
+            echo "{{.}} not found"
+          fi
+        {{end}}
+
+  create-cluster:
+    run: once
+    preconditions:
+      - *check-docker-running
+    cmds:
+      - kind create cluster --config=./kind-config.yaml
+    status:
+      - *check-cluster-running
+
+  run-cloud-provider-kind:
+    run: once
+    deps:
+      - create-cluster
+    interactive: true
+    cmds:
+      - sudo -v
+      - bash -c 'nohup sudo cloud-provider-kind --gateway-channel standard >/dev/null 2>&1 &'  # yamllint disable-line rule:line-length
+    status:
+      - *check-cloud-provider-kind-running
+
+  deploy-gateway:
+    run: once
+    deps:
+      - run-cloud-provider-kind
+    cmds:
+      - |
+        kubectl apply -f gateway.yaml
+    status:
+      - kubectl diff -f gateway.yaml
+
+  clean-gateway:
+    cmds:
+      - kubectl delete -f app.yaml
+
+  deploy-app:
+    run: once
+    deps:
+      - deploy-gateway
+    cmds:
+      - kubectl apply -f app.yaml
+    status:
+      - kubectl diff -f app.yaml
+
+  clean-app:
+    cmds:
+      - kubectl delete -f app.yaml
+
+  update-etc-hosts:
+    run: once
+    prompt: Do you want to update /etc/hosts ?
+    deps:
+      - deploy-app
+    cmds:
+      - echo {{.LOAD_BALANCER_IP}}
+      - sudo -v
+      - echo "{{.LOAD_BALANCER_IP}}      kind.local" | sudo tee -a /etc/hosts
+    status:
+      - cat /etc/hosts | grep {{.LOAD_BALANCER_IP}}
+    vars:
+      LOAD_BALANCER_IP:
+        sh: kubectl get gateway/gateway -n {{.GATEWAY_NS}} | awk '{print $3}' | awk NR==2  # yamllint disable-line rule:line-length
+
+  open-app:
+    deps:
+      - deploy-app
+    cmds:
+      - open http://kind.local
+
+  clean-cloud-provider-kind:
+    interactive: true
+    cmds:
+      - *check-cloud-provider-kind-running
+      - sudo -v
+      - sudo pkill cloud-provider-kind
+
+  clean-cluster:
+    cmds:
+      - kind delete cluster --name {{.CLUSTER_NAME}}
+
+  clean:
+    aliases: [delete]
+    ignore_error: true
+    cmds:
+      - task: clean-app
+      - task: clean-gateway
+      - task: clean-cluster
+      - task: clean-cloud-provider-kind
+      - echo "make sure to reset your etc/hosts!"

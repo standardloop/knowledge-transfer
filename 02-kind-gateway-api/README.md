@@ -1,4 +1,4 @@
-# Introduction to Local Kubernetes Using Kind
+# Kind with Gateway API using `cloud-provider-kind`
 
 ## Background
 
@@ -21,7 +21,6 @@ and the documentation here:
 - `docker`
 - `brew` (or your preferred package manager)
 - YAML
-- `helm`
 - `kubectl`
 
 ### Install and Setup
@@ -156,12 +155,7 @@ You cannot update a cluster after creation, so you will need to delete it and th
 
 ### Setting up `cloud-provider-kind`
 
-`cloud-provider-kind` allows you to use a Kubernetes `Service` type [LoadBalancer](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer).
-
-The reason it is called `cloud-provider-kind` is because when you use a Kubernetes `Service` type `LoadBalancer` in a cloud environment, such as [Google Kubernetes Engine](https://docs.cloud.google.com/kubernetes-engine/docs/concepts/service-load-balancer), the Cloud Provider will setup some infrastructure behind the scenes to allow routing.
-
-Previously, you had to configure [MetalLB](https://github.com/metallb/metallb) (which was a more involved setup and had issues on macOS), or use [Extra Port Mappings](https://kind.sigs.k8s.io/docs/user/configuration/#extra-port-mappings) (which was a simple solution, but it felt more hacky and different from what would be used in a production environment).
-
+`cloud-provider-kind` allows you to use a [Kubernetes Gateway](https://kubernetes.io/docs/concepts/services-networking/gateway/#api-kind-gateway) resource and get an assignable IP address
 
 #### Install
 
@@ -177,10 +171,12 @@ I recommend opening a separate terminal session for running this command to easi
 
 According to the [README of the repository](https://github.com/kubernetes-sigs/cloud-provider-kind/blob/main/README.md), you will need to run with `sudo`
 ```sh
-$ sudo cloud-provider-kind
+$ sudo cloud-provider-kind --gateway-channel standard
 ```
 
-You can watch the log information when a Kubernetes `Service` type `LoadBalancer` is created or deleted.
+Notice the flag I am passing in.
+
+You can watch the log information when a Kubernetes `Gateway` is created or deleted.
 
 
 You can also view the docker container running:
@@ -192,79 +188,74 @@ a411bd911a94   envoyproxy/envoy:v1.33.2   "/docker-entrypoint.…"   4 seconds a
 ...
 ```
 
+You can now see a [GatewayClass](https://kubernetes.io/docs/concepts/services-networking/gateway/#api-kind-gateway-class) was created for us in the cluster:
 
-### Deploying `ingress-nginx` as our `LoadBalancer`
+```sh
+$ kubectl get GatewayClass
+NAME                  CONTROLLER                            ACCEPTED   AGE
+cloud-provider-kind   kind.sigs.k8s.io/gateway-controller   True       5m1s
+```
 
-#### Creating a values file
 
-I will create a file called `ingress-nginx.values.yaml` with the following contents:
+### Deploying the Gateway Resourcce
+
+I will create a file called `gateway.yaml` with the following contents:
 
 ```yaml
-controller:
-  service:
-    type: "LoadBalancer"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gateway
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gateway
+  namespace: gateway
+spec:
+  gatewayClassName: cloud-provider-kind
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: "kind.local"
+      allowedRoutes:
+        namespaces:
+          from: All
 ```
 
-You can pass values as command line arguments, but I prefer values files as it helps with upgrading the release if needed.
+Notice how the `gatewayClassName` references the `GatewayClass` that was created for us shown in the previous step.
 
-### Deploy the helm chart
-
-Make sure to use the latest chart version, for me it was `4.13.3`.
+Deploy with the following:
 
 ```sh
-$ helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-$ helm repo update
-$ helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-    --create-namespace \
-    -n ingress-nginx \
-    --values ingress-nginx.values.yaml \
-    --version 4.13.3 \
-    --wait
+$ kubectl apply -f gateway.yaml
 ```
 
-#### Confirm installation
-
-
-##### Check namespace, pod, and service
+If you see this message:
 ```sh
-$ kubectl get ns
-NAME                 STATUS   AGE
-default              Active   21m
-ingress-nginx        Active   2m12s
-kube-node-lease      Active   21m
-kube-public          Active   21m
-kube-system          Active   21m
-local-path-storage   Active   21m
-$ kubectl get pods -n ingress-nginx
-NAME                                        READY   STATUS    RESTARTS   AGE
-ingress-nginx-controller-6f6c964579-csllp   1/1     Running   0          2m27s
-$ kubectl get svc -n ingress-nginx
-kubectl get svc -n ingress-nginx
-NAME                                 TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)                      AGE
-ingress-nginx-controller             LoadBalancer   10.96.241.10   172.18.0.4    80:32725/TCP,443:30829/TCP   2m51s
-ingress-nginx-controller-admission   ClusterIP      10.96.249.13   <none>        443/TCP                      2m51s
+error: resource mapping not found for name: "gateway" namespace: "gateway" from "gateway.yaml": no matches for kind "Gateway" in version "gateway.networking.k8s.io/v1"
+ensure CRDs are installed first
 ```
 
-If your `EXTERNAL-IP` for the `ingress-nginx-controller` svc is showing `<pending>` make sure `cloud-provider-kind` is running and inspect the logs.
+Just run the apply command again, the `cloud-provider-kind` service may not have been running fully.
 
 ---
 Easy way to print out your IP address:
 ```sh
-$ kubectl get svc/ingress-nginx-controller -n ingress-nginx -o=jsonpath='{.status.loadBalancer.ingress[0].ip}'
+$ kubectl get gateway/gateway -n gateway | awk '{print $3}' | awk NR==2
 172.18.0.4
 ```
 
-##### Use `curl` to hit the `LoadBalancer`
+##### Use `curl` to hit the `Gateway`
 
 ```sh
-$ curl http://172.18.0.4
-<html>
-<head><title>404 Not Found</title></head>
-<body>
-<center><h1>404 Not Found</h1></center>
-<hr><center>nginx</center>
-</body>
-</html>
+$ curl http://172.18.0.4 -I
+HTTP/1.1 404 Not Found
+date: Mon, 03 Nov 2025 07:11:01 GMT
+server: envoy
+transfer-encoding: chunked
 ```
 
 Awesome!
@@ -274,7 +265,7 @@ Awesome!
 
 Using the IP address we got from:
 ```sh
-$ kubectl get svc/ingress-nginx-controller -n ingress-nginx -o=jsonpath='{.status.loadBalancer.ingress[0].ip}'
+$ kubectl get gateway/gateway -n gateway | awk '{print $3}' | awk NR==2
 ```
 
 We can update `/etc/hosts` to have a nice looking URL.
@@ -338,24 +329,21 @@ spec:
       targetPort: 8080
   type: ClusterIP
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
 metadata:
-  name: http-echo-service-ingress
+  name: http-echo-route
   namespace: app
 spec:
-  ingressClassName: nginx
+  parentRefs:
+    - name: gateway
+      namespace: gateway
+  hostnames:
+    - "kind.local"
   rules:
-    - host: kind.local
-      http:
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: http-echo-service
-                port:
-                  number: 80
+    - backendRefs:
+        - name: http-echo-service
+          port: 80
 ```
 
 ```sh
@@ -363,7 +351,7 @@ $ kubectl apply -f app.yaml
 namespace/app created
 deployment.apps/http-echo-deployment created
 service/http-echo-service created
-ingress.networking.k8s.io/http-echo-service-ingress created
+httproute.gateway.networking.k8s.io/http-echo-route created
 ```
 
 Go to http://kind.local and see the message!
@@ -382,7 +370,7 @@ $ kind delete cluster --name slke-1
 
 Use my provided `Taskfile.yml` and run it all yourself easily!
 
-- https://github.com/standardloop/knowledge-transfer/blob/main/01-kind/Taskfile.yml
+- https://github.com/standardloop/knowledge-transfer/blob/main/02-kind-gateway-api/Taskfile.yml
 
 ```sh
 $ task
