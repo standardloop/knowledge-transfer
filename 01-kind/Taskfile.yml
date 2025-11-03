@@ -30,6 +30,7 @@ tasks:
       - run-cloud-provider-kind
       - deploy-ingress
       - deploy-app
+      - update-etc-hosts
       - open-app
 
   check-dependencies:
