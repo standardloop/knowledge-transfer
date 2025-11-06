@@ -31,7 +31,7 @@ Have `docker` installed and have a docker engine running.
 
 For this article, I will be using [Rancher Desktop](https://github.com/rancher-sandbox/rancher-desktop/).
 
-You can install with Rancher Desktop with `brew` like this:
+You can install Rancher Desktop with `brew` like this:
 
 ```sh
 $ brew install --cask rancher
