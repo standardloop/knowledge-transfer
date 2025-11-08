@@ -1,34 +1,15 @@
 ---
 version: '3'
 
-vars:
-  DEPENDENCIES:
-    - rdctl
-    - docker
-
-check-docker-running: &check-docker-running |
-  docker info > /dev/null 2>&1
-
 tasks:
   default:
     aliases: [all, make]
     deps:
-      - check-dependencies
-      - run-rancher
+      - rancher:run
 
-  check-dependencies:
+  rancher:run:
     run: once
     silent: true
-    cmds:
-      - |
-        {{range .DEPENDENCIES}}
-          if ! command -v {{.}} > /dev/null; then
-            echo "{{.}} not found"
-          fi
-        {{end}}
-
-  run-rancher:
-    run: once
     cmds:
       - rdctl start
       - |
@@ -40,9 +21,10 @@ tasks:
         echo "docker is ready!"
     status:
       - rdctl list-settings > /dev/null 2>&1
-      - *check-docker-running
+      - docker info > /dev/null 2>&1
 
-  clean-rancher:
+  rancher:clean:
+    silent: true
     cmds:
       - rdctl shutdown
 
@@ -50,4 +32,4 @@ tasks:
     aliases: [delete]
     ignore_error: true
     cmds:
-      - task: clean-rancher
+      - task: rancher:clean

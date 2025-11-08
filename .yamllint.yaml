@@ -3,3 +3,7 @@ extends: default
 
 ignore: |
   private/
+
+rules:
+  line-length:
+    level: warning
