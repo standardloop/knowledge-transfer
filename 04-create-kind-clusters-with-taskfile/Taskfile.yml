@@ -43,7 +43,6 @@ tasks:
 
   clusters:create:
     run: once
-    silent: true
     deps:
       - rancher:run
     cmds:
@@ -53,6 +52,8 @@ tasks:
           if ! kubectl cluster-info --context kind-${cluster_name} > /dev/null 2>&1
           then
             kind create cluster --config={{.}}
+          else
+            echo "$cluster_name already created"
           fi
         {{end}}
     status:
@@ -79,11 +80,17 @@ tasks:
       - pgrep sudo cloud-provider-kind
 
   cloud-provider-kind:clean:
+    silent: true
     interactive: true
     cmds:
-      - pgrep sudo cloud-provider-kind
-      - sudo -v
-      - sudo pkill cloud-provider-kind
+      - |
+        if pgrep sudo cloud-provider-kind > /dev/null 2>&1
+        then
+          sudo -v
+          sudo pkill cloud-provider-kind
+        else
+          echo "cloud-provider-kind is not running"
+        fi
 
   cloud-provider-kind:restart:
     interactive: true
