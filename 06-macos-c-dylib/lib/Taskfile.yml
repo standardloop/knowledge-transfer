@@ -1,0 +1,54 @@
+---
+version: '3'
+
+vars:
+  CC: gcc
+  CC_FLAGS: "-Werror -Wextra -Wall -Wfree-nonheap-object -std=c17"
+  DYLIB_NAME: add
+  DYLIB_NAME_FULL: "libstandardloop-{{.DYLIB_NAME}}.dylib"
+  DYLIB_PATH: /usr/local/lib/standardloop/
+  DYLIB_INCLUDE_PATH: /usr/local/include/standardloop/
+  DYLIB_VERSION: 0.0.1
+  SOURCE_FILES:
+    - add.c
+
+tasks:
+  default:
+    deps:
+      - move-files
+
+  build-release:
+    cmds:
+      - |
+        {{.CC}} {{.CC_FLAGS}} \
+        {{range .SOURCE_FILES}} {{.}} {{end}} \
+        -O3 \
+        -dynamiclib \
+        -current_version {{.DYLIB_VERSION}} \
+        -compatibility_version {{.DYLIB_VERSION}} \
+        -o {{.DYLIB_NAME_FULL}}
+    sources:
+      - |
+        {{range .SOURCE_FILES}} {{.}} {{end}}
+    generates:
+      - "{{.DYLIB_NAME_FULL}}"
+
+
+  move-files:
+    deps:
+      - build-release
+    cmds:
+      - sudo -v
+      - sudo cp {{.DYLIB_NAME_FULL}} {{.DYLIB_PATH}}
+      - sudo cp {{.DYLIB_NAME}}.h {{.DYLIB_INCLUDE_PATH}}
+    status:
+      - otool -L {{.DYLIB_PATH}}{{.DYLIB_NAME_FULL}} | head -n 2 | tail -n 1 | grep "current version {{.DYLIB_VERSION}}"
+      - cat {{.DYLIB_INCLUDE_PATH}}{{.DYLIB_NAME}}.h | grep "STANDARDLOOP_{{.DYLIB_NAME | upper}}_H_VERSION \"{{.DYLIB_VERSION}}\""
+
+  clean:
+    allow_failure: true
+    cmds:
+      - sudo -v
+      - rm -f {{.DYLIB_NAME_FULL}}
+      - sudo rm -f {{.DYLIB_PATH}}{{.DYLIB_NAME_FULL}}
+      - sudo rm -f {{.DYLIB_INCLUDE_PATH}}{{.DYLIB_NAME}}.h

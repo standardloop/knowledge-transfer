@@ -1,0 +1,50 @@
+---
+version: '3'
+
+vars:
+  CC: gcc
+  CC_FLAGS: "-Werror -Wextra -Wall -Wfree-nonheap-object -std=c17"
+  EXECUTABLE_NAME: main
+  DYN_LIBS_USED_PATH: "-L/usr/local/lib/standardloop"
+  DYN_LIBS_USED: "-lstandardloop-add"
+  SOURCE_FILES:
+    - main.c
+
+tasks:
+  default:
+    deps:
+      - run
+
+  dependencies:
+    cmds:
+      - task --taskfile ./lib/Taskfile.yml
+
+  build:
+    deps:
+      - dependencies
+    cmds:
+      - |
+        {{.CC}} {{.CC_FLAGS}} \
+        {{range .SOURCE_FILES}} {{.}} {{end}} \
+        {{.DYN_LIBS_USED_PATH}} \
+        {{.DYN_LIBS_USED}} \
+        -o {{.EXECUTABLE_NAME}}
+    sources:
+      - |
+        {{range .SOURCE_FILES}} {{.}} {{end}}
+    generates:
+      - "{{.EXECUTABLE_NAME}}"
+
+  run:
+    deps:
+      - build
+    cmds:
+      - DYLD_FALLBACK_LIBRARY_PATH={{.DYLIB_PATH}} ./{{.EXECUTABLE_NAME}}
+    vars:
+      DYLIB_PATH: /usr/local/lib/standardloop/
+
+  clean:
+    allow_failure: true
+    cmds:
+      - rm -f {{.EXECUTABLE_NAME}}
+      - task --taskfile ./lib/Taskfile.yml clean

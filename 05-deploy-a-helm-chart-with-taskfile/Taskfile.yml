@@ -126,7 +126,7 @@ tasks:
     aliases: [delete]
     ignore_error: true
     cmds:
-      - task: ingress:clean
+      - task: metrics-server:clean
       - task: cloud-provider-kind:clean
       - task: clusters:clean
       - task: rancher:clean

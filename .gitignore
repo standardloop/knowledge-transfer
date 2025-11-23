@@ -1,4 +1,9 @@
 private/
 .out
 0X-three-must-have-kubernetes-tools/
-03-comparing-kubectx-and-kubeswitch/
+0X-kustomize-with-taskfile
+.task
+*.dylib
+*.out
+main
+.vscode
