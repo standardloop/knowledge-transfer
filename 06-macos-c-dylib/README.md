@@ -11,18 +11,18 @@ It is analogous to Windows `*.dll` file or a `*.so` file on Linux.
 
 Every `dylib` file will need a corresponding header (`.h`) file.
 
-It is recommended to use `/usr/local/lib` for personal dylib files and then `/usr/local/include`
+It is recommended to use `/usr/local/lib` for personal dylib files and then `/usr/local/include` for personal header files.
 
 I will make a directory there to group mine:
 
 ```sh
-$ mkdir -p /usr/local/lib/standardloop/      # my dylibs will be put here
-$ mkdir -p /usr/local/include/standardloop/  # the corresponding header files will be placed here
+$ sudo mkdir -p /usr/local/lib/standardloop/      # my dylibs will be put here
+$ sudo mkdir -p /usr/local/include/standardloop/  # the corresponding header files will be placed here
 ```
 
 ## Example Dylib
 
-I'll define a `dylib` with a simple function that will add to ints and return the sum.
+I'll define a `dylib` with a simple function that will add two ints and return the sum.
 
 ### Header file
 
@@ -72,7 +72,7 @@ $ gcc -Werror -Wextra -Wall -Wfree-nonheap-object \
     -o libstandardloop-add.dylib
 ```
 
-Notice the `-dynamiclib`, `current_version`, and `compatibility_version` flag.
+Notice the `-dynamiclib`, `current_version`, and `compatibility_version` flags.
 
 We can then use `otool` to inspect it:
 
@@ -92,6 +92,7 @@ $ sudo cp add.h /usr/local/include/standardloop/
 
 ## Example Programming using the dylib
 
+### C file
 ```c
 #include <stdlib.h>
 #include <stdio.h>
@@ -118,10 +119,10 @@ $ gcc -Werror -Wextra -Wall -Wfree-nonheap-object \
     -o main
 ```
 
-does the `-L` and `-l` flags used.
+notice the `-L` and `-l` flags used.
 
-`-L` tells the compiler where to look for libraries
-`-l` tells the compiler what specific libraries to link
+`-L` tells the compiler where to look for libraries.
+`-l` tells the compiler what specific libraries to link.
 
 ### Running
 
@@ -152,12 +153,15 @@ So you don't have to worry about setting the variable when running the executabl
 ## Taskfile
 
 Folder structure:
+
+```sh
 ├── lib
 │   ├── add.c
 │   ├── add.h
 │   └── Taskfile.yml
 ├── main.c
 └── Taskfile.yml
+```
 
 ### Compiling and moving the dylib (Taskfile in the lib directory)
 
@@ -272,6 +276,7 @@ tasks:
     allow_failure: true
     cmds:
       - rm -f {{.EXECUTABLE_NAME}}
+      - task --taskfile ./lib/Taskfile.yml clean
 ```
 
 ```sh
