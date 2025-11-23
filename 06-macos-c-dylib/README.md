@@ -15,7 +15,7 @@ It is recommended to use `/usr/local/lib` for personal dylib files and then `/us
 
 I will make a directory there to group mine:
 
-```sh
+``` sh
 $ sudo mkdir -p /usr/local/lib/standardloop/      # my dylibs will be put here
 $ sudo mkdir -p /usr/local/include/standardloop/  # the corresponding header files will be placed here
 ```
@@ -27,10 +27,11 @@ I'll define a `dylib` with a simple function that will add two ints and return t
 ### Header file
 
 
-```sh
+``` sh
 $ touch add.h
 ```
-```c
+
+``` c
 #ifndef STANDARDLOOP_ADD_H
 #define STANDARDLOOP_ADD_H
 
@@ -46,7 +47,7 @@ int add(int, int);
 
 ### C file
 
-```sh
+``` sh
 $ touch add.c
 ```
 
@@ -61,7 +62,7 @@ int add(int x, int y)
 
 ### Compiling the Dynamic Library
 
-```sh
+``` sh
 $ gcc -Werror -Wextra -Wall -Wfree-nonheap-object \
     -std=c17 \
     add.c \
@@ -76,7 +77,7 @@ Notice the `-dynamiclib`, `current_version`, and `compatibility_version` flags.
 
 We can then use `otool` to inspect it:
 
-```sh
+``` sh
 $ otool -L libstandardloop-add.dylib
 libstandardloop-add.dylib:
         libstandardloop-add.dylib (compatibility version 0.0.1, current version 0.0.1)
@@ -85,7 +86,7 @@ libstandardloop-add.dylib:
 
 ### Moving the files
 
-```sh
+``` sh
 $ sudo cp libstandardloop-add.dylib /usr/local/lib/standardloop/
 $ sudo cp add.h /usr/local/include/standardloop/
 ```
@@ -93,7 +94,7 @@ $ sudo cp add.h /usr/local/include/standardloop/
 ## Example Programming using the dylib
 
 ### C file
-```c
+``` c
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -110,7 +111,7 @@ Notice the import 😎
 
 ### Compiling
 
-```sh
+``` sh
 $ gcc -Werror -Wextra -Wall -Wfree-nonheap-object \
     -std=c17 \
     main.c  \
@@ -126,7 +127,7 @@ notice the `-L` and `-l` flags used.
 
 ### Running
 
-```sh
+``` sh
 $ DYLD_FALLBACK_LIBRARY_PATH=/usr/local/lib/standardloop/ ./main
 3
 ```
@@ -136,14 +137,14 @@ Here we need to define a `DYLD_FALLBACK_LIBRARY_PATH` to tell the macOS dynamic 
 There is also `DYLD_LIBRARY_PATH`, but I don't recommend using this variable.
 
 If it is not set, you will get an error like this:
-```sh
+``` sh
 $ ./main
 dyld[77613]: Library not loaded: libstandardloop-add.dylib
 ...
 ```
 
 I recommend adding this line to your `~/.zshenv`:
-```sh
+``` sh
 export DYLD_FALLBACK_LIBRARY_PATH="/usr/local/lib/standardloop"
 ```
 
@@ -154,7 +155,7 @@ So you don't have to worry about setting the variable when running the executabl
 
 Folder structure:
 
-```sh
+``` sh
 ├── lib
 │   ├── add.c
 │   ├── add.h
@@ -165,7 +166,7 @@ Folder structure:
 
 ### Compiling and moving the dylib (Taskfile in the lib directory)
 
-```yaml
+``` yaml
 ---
 version: '3'
 
@@ -226,7 +227,7 @@ This file won't be run directly
 
 ### Compiling our test Program
 
-```yaml
+``` yaml
 ---
 version: '3'
 
@@ -279,7 +280,7 @@ tasks:
       - task --taskfile ./lib/Taskfile.yml clean
 ```
 
-```sh
+``` sh
 $ task
 task: [dependencies] task --taskfile ./lib/Taskfile.yml
 task: [build-release] gcc -Werror -Wextra -Wall -Wfree-nonheap-object -std=c17 \
