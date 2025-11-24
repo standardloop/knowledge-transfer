@@ -2,6 +2,8 @@
 
 ## GitHub
 
+- https://github.com/standardloop/knowledge-transfer/tree/main/03-running-rancher-with-go-task
+
 ## Install and Setup
 
 ### Rancher
@@ -186,7 +188,7 @@ Similar to the default task I made, I like to make a clean task:
 
 Now you can run `task clean` or `task delete`
 
-### The full Taskfile
+## The full Taskfile
 
 
 ```yaml

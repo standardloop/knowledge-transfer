@@ -2,11 +2,11 @@
 
 ## GitHub
 
--
+- https://github.com/standardloop/knowledge-transfer/tree/main/05-deploy-a-helm-chart-with-taskfile
 
 ## Prerequisites
 
--
+- https://medium.com/@standardloop/using-taskfile-to-create-multiple-kind-clusters-0d9e4f4ad6d0
 
 ## Current Taskfile
 
@@ -232,4 +232,141 @@ task: Task "metrics-server:deploy" is up to date
       - helm uninstall metrics-server -n {{.METRICS_SERVER_NS}}
 ```
 
-Really simple :D
+Really simple 😀
+
+## The Full Taskfile
+
+```yaml
+---
+version: '3'
+
+vars:
+  CLUSTERS_FOLDER: clusters
+  CLUSTERS:
+    sh: find ./{{.CLUSTERS_FOLDER}} -maxdepth 1 -type f
+  METRICS_SERVER_NS: kube-system
+  METRICS_SERVER_VERSION: 3.13.0
+
+tasks:
+  default:
+    aliases: [all, make]
+    deps:
+      - metrics-server:deploy
+
+  rancher:run:
+    run: once
+    silent: true
+    cmds:
+      - rdctl start
+      - |
+        until docker info > /dev/null 2>&1
+        do
+          echo "waiting for docker to come up...."
+          sleep 5
+        done
+        echo "docker is ready!"
+    status:
+      - rdctl list-settings > /dev/null 2>&1
+      - docker info > /dev/null 2>&1
+
+  rancher:clean:
+    prompt: Do you want to update quit Rancher Desktop?
+    cmds:
+      - rdctl shutdown
+
+  clusters:create:
+    run: once
+    deps:
+      - rancher:run
+    cmds:
+      - |
+        {{range .CLUSTERS | splitArgs}}
+          cluster_name=$(yq '.name' {{.}})
+          if ! kubectl cluster-info --context kind-${cluster_name} > /dev/null 2>&1
+          then
+            kind create cluster --config={{.}}
+          else
+            echo "$cluster_name already created"
+          fi
+        {{end}}
+    status:
+      - |
+        {{range .CLUSTERS | splitArgs}}
+          cluster_name=$(yq '.name' {{.}})
+          kubectl cluster-info --context kind-${cluster_name}
+        {{end}}
+
+  clusters:clean:
+    silent: true
+    cmds:
+      - kind delete clusters --all
+
+  cloud-provider-kind:run:
+    run: once
+    deps:
+      - clusters:create
+    interactive: true
+    cmds:
+      - sudo -v
+      - bash -c 'nohup sudo cloud-provider-kind >/dev/null 2>&1 &'
+    status:
+      - pgrep sudo cloud-provider-kind
+
+  cloud-provider-kind:clean:
+    silent: true
+    interactive: true
+    cmds:
+      - |
+        if pgrep sudo cloud-provider-kind > /dev/null 2>&1
+        then
+          sudo -v
+          sudo pkill cloud-provider-kind
+        else
+          echo "cloud-provider-kind is not running"
+        fi
+
+  cloud-provider-kind:restart:
+    interactive: true
+    cmds:
+      - task: clean-cloud-provider-kind
+      - task: run-cloud-provider-kind
+
+  metrics-server:deploy:
+    deps:
+      - cloud-provider-kind:run
+    cmds:
+      - |
+        helm repo add --force-update metrics-server https://kubernetes-sigs.github.io/metrics-server/
+        helm upgrade --install metrics-server metrics-server/metrics-server \
+          -n {{.METRICS_SERVER_NS}} \
+          --values metrics-server.values.yaml \
+          --version {{.METRICS_SERVER_VERSION}} \
+          --wait
+    status:
+      - |
+        helm template metrics-server metrics-server/metrics-server \
+          -n {{.METRICS_SERVER_NS}} \
+          --is-upgrade \
+          --no-hooks \
+          --values metrics-server.values.yaml \
+          --version {{.METRICS_SERVER_VERSION}} | kubectl diff -f -
+    # status:
+    #   - |
+    #     helm diff upgrade metrics-server metrics-server/metrics-server \
+    #       -n {{.METRICS_SERVER_NS}} \
+    #       --values metrics-server.values.yaml \
+    #       --version {{.METRICS_SERVER_VERSION}}
+
+  metrics-server:clean:
+    cmds:
+      - helm uninstall metrics-server -n {{.METRICS_SERVER_NS}}
+
+  clean:
+    aliases: [delete]
+    ignore_error: true
+    cmds:
+      - task: metrics-server:clean
+      - task: cloud-provider-kind:clean
+      - task: clusters:clean
+      - task: rancher:clean
+```

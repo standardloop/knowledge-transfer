@@ -1,5 +1,10 @@
 # Introduction to Local Kubernetes Using Kind
 
+## GitHub Repo
+
+- https://github.com/standardloop/knowledge-transfer/tree/main/01-kind
+
+
 ## Background
 
 *kind is a tool for running local Kubernetes clusters using Docker container “nodes”.

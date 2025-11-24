@@ -1,5 +1,9 @@
 # Kind with Gateway API using `cloud-provider-kind`
 
+## GitHub Repo
+
+- https://github.com/standardloop/knowledge-transfer/tree/main/02-kind-gateway-api
+
 ## Background
 
 *kind is a tool for running local Kubernetes clusters using Docker container “nodes”.

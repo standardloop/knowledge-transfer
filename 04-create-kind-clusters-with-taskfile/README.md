@@ -2,7 +2,7 @@
 
 ## GitHub
 
--
+- https://github.com/standardloop/knowledge-transfer/tree/main/04-create-kind-clusters-with-taskfile
 
 ## Prerequisites
 
@@ -93,7 +93,7 @@ nodes:
 
 ### Create a Task to deploy the clusters
 
-### Dynamic Variable for Finding Cluster Config File(s)
+#### Dynamic Variable for Finding Cluster Config File(s)
 
 Taskfile allows you to create variables for your tasks to reference.
 
@@ -360,7 +360,7 @@ Let's check if it is running, if it is then we will remove it.
 
 ---
 
-### The Whole Taskfile
+## The Whole Taskfile
 
 ```yaml
 ---
