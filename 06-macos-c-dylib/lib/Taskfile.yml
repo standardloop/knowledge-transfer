@@ -28,8 +28,7 @@ tasks:
         -compatibility_version {{.DYLIB_VERSION}} \
         -o {{.DYLIB_NAME_FULL}}
     sources:
-      - |
-        {{range .SOURCE_FILES}} {{.}} {{end}}
+      - ./*.c
     generates:
       - "{{.DYLIB_NAME_FULL}}"
 

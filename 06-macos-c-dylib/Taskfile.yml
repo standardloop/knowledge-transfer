@@ -30,8 +30,7 @@ tasks:
         {{.DYN_LIBS_USED}} \
         -o {{.EXECUTABLE_NAME}}
     sources:
-      - |
-        {{range .SOURCE_FILES}} {{.}} {{end}}
+      - ./.*.c
     generates:
       - "{{.EXECUTABLE_NAME}}"
 
