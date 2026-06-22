@@ -54,7 +54,7 @@ $ code ~/.config/starship.toml
 Here are some sections that I have changed:
 
 ```toml
-format = "$battery$directory$git_branch$character"
+format = "$directory$git_branch$character"
 add_newline = false
 
 [character]
