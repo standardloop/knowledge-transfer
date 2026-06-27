@@ -1,0 +1,127 @@
+---
+version: '3'
+
+# silent: true
+
+vars:
+  CC: /opt/homebrew/opt/llvm/bin/clang
+  CC_FLAGS: "-O0 -Werror -Wextra -Wall -Wfree-nonheap-object -std=c17"
+  EXECUTABLE_NAME: main
+  DYN_LIBS_USED_PATH: "" #"-L/usr/local/lib/standardloop"
+  DYN_LIBS_USED: "" # "-lstandardloop-medium"
+  SOURCE_FILES:
+    - main.c
+
+tasks:
+  default:
+    silent: true
+    cmds:
+      - task: build
+      - task: build:sanitize
+      - task: build:debug
+
+  build:
+    cmds:
+      - |
+        {{.CC}} {{.CC_FLAGS}} \
+        {{range .SOURCE_FILES}} {{.}} {{end}} \
+        {{.DYN_LIBS_USED_PATH}} \
+        {{.DYN_LIBS_USED}} \
+        -o {{.EXECUTABLE_NAME}}
+    sources:
+      - ./*.c
+    generates:
+      - "{{.EXECUTABLE_NAME}}"
+
+  run:
+    deps:
+      - build
+    cmds:
+      - ./{{.EXECUTABLE_NAME}}
+
+  build:sanitize:
+    run: once
+    cmds:
+      - |
+        {{.CC}} {{.CC_FLAGS}} \
+        -fsanitize=address \
+        -fno-omit-frame-pointer \
+        {{range .SOURCE_FILES}} {{.}} {{end}} \
+        {{.DYN_LIBS_USED_PATH}} \
+        {{.DYN_LIBS_USED}} \
+        -o {{.EXECUTABLE_NAME}}-sanitize
+    sources:
+      - ./*.c
+    generates:
+      - "{{.EXECUTABLE_NAME}}-sanitize"
+
+  run:sanitize:
+    deps:
+      - build:sanitize
+    cmds:
+      - ./{{.EXECUTABLE_NAME}}-sanitize
+
+  build:debug:
+    cmds:
+      - |
+        {{.CC}} {{.CC_FLAGS}} \
+        -g \
+        {{range .SOURCE_FILES}} {{.}} {{end}} \
+        {{.DYN_LIBS_USED_PATH}} \
+        {{.DYN_LIBS_USED}} \
+        -o {{.EXECUTABLE_NAME}}-debug
+    sources:
+      - ./*.c
+    generates:
+      - "{{.EXECUTABLE_NAME}}-debug"
+
+  clean:
+    allow_failures: true
+    cmds:
+      - rm -f {{.EXECUTABLE_NAME}}
+      - rm -f {{.EXECUTABLE_NAME}}-debug
+      - rm -f {{.EXECUTABLE_NAME}}-sanitize
+      - rm -f {{.EXECUTABLE_NAME}}-optimize
+      - rm -f a.out
+      - rm -rf {{.EXECUTABLE_NAME}}-debug.dSYM
+      - rm -f *.dylib
+
+  leaks:
+    cmds:
+      - task: leaks:cp
+      - task: leaks:run
+      - task: leaks:clean
+
+  leaks:cp:
+    deps:
+      - build
+    cmds:
+      - cp /usr/local/lib/standardloop/libstandardloop-util.dylib ./ # to get around sips we need to move dylibs to local dir :(
+
+  leaks:clean:
+    cmds:
+      - rm -f libstandardloop-util.dylib
+
+  leaks:run:
+    cmds:
+      - leaks --atExit -- ./{{.EXECUTABLE_NAME}}
+
+  build:scribble:
+    cmds:
+      - |
+        {{.CC}} {{.CC_FLAGS}} \
+        scribble.c \
+        {{.DYN_LIBS_USED_PATH}} \
+        {{.DYN_LIBS_USED}} \
+        -o scribble
+    sources:
+      - ./*.c
+    generates:
+      - scribble
+
+
+  run:scribble:
+    cmds:
+      - export MallocScribble=1
+      - export MallocPreScribble=1
+      - ./scribble
