@@ -4,11 +4,9 @@ version: '3'
 # silent: true
 
 vars:
-  CC: /opt/homebrew/opt/llvm/bin/clang
+  CC: /opt/homebrew/opt/llvm/bin/clang # normal apple clang was having issues with address sanitizer for me
   CC_FLAGS: "-O0 -Werror -Wextra -Wall -Wfree-nonheap-object -std=c17"
   EXECUTABLE_NAME: main
-  DYN_LIBS_USED_PATH: "" #"-L/usr/local/lib/standardloop"
-  DYN_LIBS_USED: "" # "-lstandardloop-medium"
   SOURCE_FILES:
     - main.c
 
@@ -19,17 +17,16 @@ tasks:
       - task: build
       - task: build:sanitize
       - task: build:debug
+      - task: build:with-dylib
 
   build:
     cmds:
       - |
         {{.CC}} {{.CC_FLAGS}} \
         {{range .SOURCE_FILES}} {{.}} {{end}} \
-        {{.DYN_LIBS_USED_PATH}} \
-        {{.DYN_LIBS_USED}} \
         -o {{.EXECUTABLE_NAME}}
     sources:
-      - ./*.c
+      - ./main.c
     generates:
       - "{{.EXECUTABLE_NAME}}"
 
@@ -47,11 +44,9 @@ tasks:
         -fsanitize=address \
         -fno-omit-frame-pointer \
         {{range .SOURCE_FILES}} {{.}} {{end}} \
-        {{.DYN_LIBS_USED_PATH}} \
-        {{.DYN_LIBS_USED}} \
         -o {{.EXECUTABLE_NAME}}-sanitize
     sources:
-      - ./*.c
+      - ./main.c
     generates:
       - "{{.EXECUTABLE_NAME}}-sanitize"
 
@@ -67,11 +62,9 @@ tasks:
         {{.CC}} {{.CC_FLAGS}} \
         -g \
         {{range .SOURCE_FILES}} {{.}} {{end}} \
-        {{.DYN_LIBS_USED_PATH}} \
-        {{.DYN_LIBS_USED}} \
         -o {{.EXECUTABLE_NAME}}-debug
     sources:
-      - ./*.c
+      - ./main.c
     generates:
       - "{{.EXECUTABLE_NAME}}-debug"
 
@@ -86,25 +79,44 @@ tasks:
       - rm -rf {{.EXECUTABLE_NAME}}-debug.dSYM
       - rm -f *.dylib
 
-  leaks:
+  build:with-dylib:
     cmds:
-      - task: leaks:cp
-      - task: leaks:run
-      - task: leaks:clean
+      - |
+        clang {{.CC_FLAGS}} \
+        {{range .SOURCE_FILES}} {{.}} {{end}} \
+        {{.DYN_LIBS_USED_PATH}} \
+        {{.DYN_LIBS_USED}} \
+        -o {{.EXECUTABLE_NAME}}-with-lib
+    vars:
+      DYN_LIBS_USED_PATH: "-L/usr/local/lib/standardloop"
+      DYN_LIBS_USED: "-lstandardloop-medium"
+      SOURCE_FILES:
+        - main-with-lib.c
+    sources:
+      - ./main-with-lib.c
+    generates:
+      - "{{.EXECUTABLE_NAME}}-with-lib"
 
-  leaks:cp:
+  leaks:with-dylib:
+    cmds:
+      - task: leaks:with-dylib:run
+
+  leaks:with-dylib:cp:
     deps:
-      - build
+      - build:with-dylib
     cmds:
-      - cp /usr/local/lib/standardloop/libstandardloop-util.dylib ./ # to get around sips we need to move dylibs to local dir :(
+      - cp /usr/local/lib/standardloop/libstandardloop-medium.dylib ./
 
-  leaks:clean:
+  leaks:with-dylib:clean:
     cmds:
-      - rm -f libstandardloop-util.dylib
+      - rm -f libstandardloop-medium.dylib
 
-  leaks:run:
+  leaks:with-dylib:run:
+    deps:
+      - leaks:with-dylib:cp
     cmds:
-      - leaks --atExit -- ./{{.EXECUTABLE_NAME}}
+      - leaks --atExit -- ./{{.EXECUTABLE_NAME}}-with-lib
+      - task: leaks:clean
 
   build:scribble:
     cmds:

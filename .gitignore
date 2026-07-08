@@ -64,3 +64,4 @@ main
 .vscode
 main-sanitize
 main-debug
+main-with-lib
