@@ -1,5 +1,7 @@
 # Moving from oh-my-zsh to starhip
 
+- [https://github.com/standardloop/knowledge-transfer/tree/main/07-moving-from-ohmyzsh-to-starship](https://github.com/standardloop/knowledge-transfer/tree/main/07-moving-from-ohmyzsh-to-starship)
+
 ## Background
 
 https://github.com/ohmyzsh/ohmyzsh

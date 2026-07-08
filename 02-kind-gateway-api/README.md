@@ -2,7 +2,7 @@
 
 ## GitHub Repo
 
-- https://github.com/standardloop/knowledge-transfer/tree/main/02-kind-gateway-api
+- [https://github.com/standardloop/knowledge-transfer/tree/main/02-kind-gateway-api](https://github.com/standardloop/knowledge-transfer/tree/main/02-kind-gateway-api)
 
 ## Background
 

@@ -2,8 +2,7 @@
 
 ## GitHub Repo
 
-- https://github.com/standardloop/knowledge-transfer/tree/main/01-kind
-
+- [https://github.com/standardloop/knowledge-transfer/tree/main/01-kind](https://github.com/standardloop/knowledge-transfer/tree/main/01-kind)
 
 ## Background
 

@@ -1,5 +1,7 @@
 # Creating a C Dylib on macOS
 
+- [https://github.com/standardloop/knowledge-transfer/tree/main/06-macos-c-dylib](https://github.com/standardloop/knowledge-transfer/tree/main/06-macos-c-dylib)
+
 ## Background
 
 A Dynamic Library `*.dylib` is a library that's loaded at runtime instead of at compile time.

@@ -1,6 +1,6 @@
 # macOS Tools for Catching Memory Issues For a C Program
 
-- https://github.com/standardloop/knowledge-transfer/tree/main/08-macos-catch-c-memory-issues
+- [https://github.com/standardloop/knowledge-transfer/tree/main/08-macos-catch-c-memory-issues](https://github.com/standardloop/knowledge-transfer/tree/main/08-macos-catch-c-memory-issues)
 
 
 ## Tools

@@ -2,7 +2,7 @@
 
 ## GitHub
 
-- https://github.com/standardloop/knowledge-transfer/tree/main/04-create-kind-clusters-with-taskfile
+- [https://github.com/standardloop/knowledge-transfer/tree/main/04-create-kind-clusters-with-taskfile](https://github.com/standardloop/knowledge-transfer/tree/main/04-create-kind-clusters-with-taskfile)
 
 ## Prerequisites
 

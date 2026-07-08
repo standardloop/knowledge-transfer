@@ -2,7 +2,7 @@
 
 ## GitHub
 
-- https://github.com/standardloop/knowledge-transfer/tree/main/03-running-rancher-with-go-task
+- [https://github.com/standardloop/knowledge-transfer/tree/main/03-running-rancher-with-go-task](https://github.com/standardloop/knowledge-transfer/tree/main/03-running-rancher-with-go-task)
 
 ## Install and Setup
 

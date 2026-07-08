@@ -2,7 +2,7 @@
 
 ## GitHub
 
-- https://github.com/standardloop/knowledge-transfer/tree/main/05-deploy-a-helm-chart-with-taskfile
+- [https://github.com/standardloop/knowledge-transfer/tree/main/05-deploy-a-helm-chart-with-taskfile](https://github.com/standardloop/knowledge-transfer/tree/main/05-deploy-a-helm-chart-with-taskfile)
 
 ## Prerequisites
 
