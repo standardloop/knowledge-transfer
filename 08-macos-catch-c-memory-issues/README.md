@@ -7,6 +7,8 @@
 
 In this article I will be exploring `clang` flags and macOS `leaks` with an example program to show what they are capable of.
 
+On linux, people will use `valgrind` but unfortunately this is not an option on macOS.
+
 ### `clang` Flags Intro
 
 https://clang.llvm.org/docs/AddressSanitizer.html#usage
