@@ -117,6 +117,11 @@ int main(int argc, char **argv)
 
 ### Running
 
+Use my Taskfile to compile everything needed
+```sh
+$ task
+```
+
 #### No Tools
 
 ```sh
@@ -132,9 +137,9 @@ $ starting program: ./main with argc 2
 testing forget to free
 ```
 
-No errors, the code just runs lol
+No errors, the code just runs as if there are no issues.
 
-#### clang flags
+#### `clang` flags
 
 ```sh
 $ ./main-sanitize 0
@@ -175,7 +180,9 @@ Can't examine target process's malloc zone asan_0x10525f0d0, so memory analysis 
 Reason: target process is using Address Sanitizer which doesn't work with memory analysis tools
 ```
 
-You cannot use `leaks` on a binary that was compiled with address sanitzer.
+You cannot use `leaks` on a binary that was compiled with address sanitizer.
+
+We will use the binary compiled without the address sanitizer
 
 ```sh
 leaks --atExit -- ./main 2
@@ -196,6 +203,8 @@ STACK OF 1 INSTANCE OF 'ROOT LEAK: <malloc in forgetToFree>':
     1 (4.00K) ROOT LEAK: <malloc in forgetToFree 0xbf9008000> [4096]
 ...
 ```
+
+You can see, `leaks` has identified a leak!
 
 #### Using Leaks with a Dynamic Library
 
@@ -262,7 +271,7 @@ dyld[78616]: Library not loaded: libstandardloop-medium.dylib
   Reason: tried: 'libstandardloop-medium.dylib' (no such file), '/System/Volumes/Preboot/Cryptexes/OSlibstandardloop-medium.dylib' (no such file), 'libstandardloop-medium.dylib' (no such file), '/Users/redacted/Code/knowledge-transfer/08-macos-catch-c-memory-issues/libstandardloop-medium.dylib' (no such file), '/System/Volumes/Preboot/Cryptexes/OS/Users/redacted/Code/knowledge-transfer/08-macos-catch-c-memory-issues/libstandardloop-medium.dylib' (no such file), '/Users/redacted/Code/knowledge-transfer/08-macos-catch-c-memory-issues/libstandardloop-medium.dylib' (no such file)
 ```
 
-Even though I have my `DYLD_FALLBACK_LIBRARY_PATH` variable set in my `~/.zshenv`, leaks can't pick it up.
+Even though I have my `DYLD_FALLBACK_LIBRARY_PATH` variable set in my `~/.zshenv`, `leaks` can't pick it up.
 
 ##### My Quick Fix
 
@@ -277,7 +286,7 @@ $ rm -f libstandardloop-medium.dylib
 Output
 
 ```sh
-eaks --atExit -- ./main-with-lib
+$ leaks --atExit -- ./main-with-lib
 main-with-lib(79483) MallocStackLogging: could not tag MSL-related memory as no_footprint, so those pages will be included in process footprint - No such file or directory (2)
 main-with-lib(79483) MallocStackLogging: recording malloc (and VM allocation) stacks using lite mode
 starting program: ./main-with-lib with argc 1
@@ -351,7 +360,7 @@ MallocScribble=1
 MallocPreScribble=1
 ```
 
-I haven't found a use for these quite yet, but I have I do, I will make another article!
+I haven't found a use for these quite yet, but if I do, I will make another article!
 
 ## Summary
 

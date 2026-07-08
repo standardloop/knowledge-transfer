@@ -81,6 +81,7 @@ tasks:
 
   build:with-dylib:
     cmds:
+      - task --taskfile ./lib/Taskfile.yml
       - |
         clang {{.CC_FLAGS}} \
         {{range .SOURCE_FILES}} {{.}} {{end}} \
