@@ -4,7 +4,7 @@ version: '3'
 # silent: true
 
 vars:
-  CC: /opt/homebrew/opt/llvm/bin/clang # normal apple clang was having issues with address sanitizer for me
+  CC: /opt/homebrew/opt/llvm/bin/clang -I/usr/local/include # normal apple clang was having issues with address sanitizer for me
   CC_FLAGS: "-O0 -Werror -Wextra -Wall -Wfree-nonheap-object -std=c17"
   EXECUTABLE_NAME: main
   SOURCE_FILES:
@@ -75,15 +75,17 @@ tasks:
       - rm -f {{.EXECUTABLE_NAME}}-debug
       - rm -f {{.EXECUTABLE_NAME}}-sanitize
       - rm -f {{.EXECUTABLE_NAME}}-optimize
+      - rm -f {{.EXECUTABLE_NAME}}-with-lib
       - rm -f a.out
       - rm -rf {{.EXECUTABLE_NAME}}-debug.dSYM
       - rm -f *.dylib
+      # - task clean --taskfile ./lib/Taskfile.yml
 
   build:with-dylib:
     cmds:
       - task --taskfile ./lib/Taskfile.yml
       - |
-        clang {{.CC_FLAGS}} \
+        {{.CC}} {{.CC_FLAGS}} \
         {{range .SOURCE_FILES}} {{.}} {{end}} \
         {{.DYN_LIBS_USED_PATH}} \
         {{.DYN_LIBS_USED}} \
