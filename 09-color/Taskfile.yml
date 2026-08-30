@@ -1,0 +1,28 @@
+---
+version: "3"
+
+silent: true
+
+tasks:
+  default:
+    cmds:
+      - task: run
+    silent: true
+
+  build:
+    cmds:
+      - gcc colors.c -o colors
+    sources:
+      - color.c
+    generates:
+      - color
+
+  run:
+    deps:
+      - build
+    cmds:
+      - ./colors
+
+  run-script:
+    cmds:
+      - sh colors.sh
