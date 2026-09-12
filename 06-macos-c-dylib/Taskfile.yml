@@ -1,9 +1,9 @@
 ---
-version: '3'
+version: "3"
 
 vars:
-  CC: gcc
-  CC_FLAGS: "-Werror -Wextra -Wall -Wfree-nonheap-object -std=c17"
+  CC: clang
+  CC_FLAGS: "-Werror -Wextra -Wall -Wfree-nonheap-object -std=c17 -I/usr/local/include"
   EXECUTABLE_NAME: main
   DYN_LIBS_USED_PATH: "-L/usr/local/lib/standardloop"
   DYN_LIBS_USED: "-lstandardloop-add"
@@ -43,7 +43,7 @@ tasks:
       DYLIB_PATH: /usr/local/lib/standardloop/
 
   clean:
-    allow_failure: true
+    ignore_error: true
     cmds:
       - rm -f {{.EXECUTABLE_NAME}}
       - task --taskfile ./lib/Taskfile.yml clean
