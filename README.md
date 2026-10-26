@@ -13,5 +13,5 @@ The number indicates the order in which I have written the articles.
 These articles are available to be read on:
 
 - [Medium](https://medium.com/@standardloop)
-- [My Website](https://www.standardloop.dev/tech-articles/kind/intro-to-kind/)
-- [dev.to](https://dev.to/standardloop) WIP
+- [My Website](https://docs.standardloop.dev/tech-articles/kind/intro-to-kind/)
+- [dev.to](https://dev.to/standardloop)
